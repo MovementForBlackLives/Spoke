@@ -63,16 +63,20 @@ provider:
     TWILIO_BASE_CALLBACK_URL: ${self:custom.baseUrl}
     TEXTER_SIDEBOXES: contact-reference,tag-contact
     EXPERIMENTAL_TAGS: 1
-    GOOGLE_SECRET: ${ssm:/${self:custom.stage}/spoke/GOOGLE_SECRET~true}
+    # GOOGLE_SECRET: ${ssm:/${self:custom.stage}/spoke/GOOGLE_SECRET~true}
     EXPERIMENTAL_CAMPAIGN_PHONE_NUMBERS: 1
     EXPERIMENTAL_PHONE_INVENTORY: 1
+    JOB_RUNNER: lambda-async
+    WORKER_LAMBDA_FUNCTION_NAME: spoke-${self:custom.stage}-worker
   iamRoleStatements:
     - Effect: Allow
       Action: "s3:*"
       Resource:
         - "${ssm:/${self:custom.stage}/s3/spoke-private/bucket/arn~true}"
         - "${ssm:/${self:custom.stage}/s3/spoke-private/bucket/arn~true}/*"
-
+    - Effect: Allow
+      Action: lambda:InvokeFunction
+      Resource: "*" # TODO: tighten up perms
 functions:
   api:
     handler: lambda.handler
@@ -81,6 +85,10 @@ functions:
     events:
       - http: ANY /
       - http: ANY {proxy+}
+  worker:
+    handler: build/server/integrations/job-runners/lambda-async/handler.handler
+    vpc: ${self:custom.vpcConfig}
+    timeout: 900
 
 plugins:
   - serverless-api-compression
