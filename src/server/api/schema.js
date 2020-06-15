@@ -8,13 +8,7 @@ import { capitalizeWord } from "./lib/utils";
 import twilio from "./lib/twilio";
 import ownedPhoneNumber from "./lib/owned-phone-number";
 
-import {
-  assignTexters,
-  dispatchContactIngestLoad,
-  exportCampaign,
-  importScript,
-  loadCampaignCache
-} from "../../workers/jobs";
+import { loadCampaignCache } from "../../workers/jobs";
 import { getIngestMethod } from "../../integrations/contact-loaders";
 import {
   Assignment,
@@ -22,7 +16,6 @@ import {
   CannedResponse,
   InteractionStep,
   Invite,
-  JobRequest,
   Message,
   Organization,
   Tag,
@@ -76,12 +69,9 @@ import {
 } from "./mutations";
 
 const ActionHandlers = require("../../integrations/action-handlers");
+import { jobRunner } from "../../integrations/job-runners";
 
 const uuidv4 = require("uuid").v4;
-const JOBS_SAME_PROCESS = !!(
-  process.env.JOBS_SAME_PROCESS || global.JOBS_SAME_PROCESS
-);
-const JOBS_SYNC = !!(process.env.JOBS_SYNC || global.JOBS_SYNC);
 
 // This function determines whether a field was requested
 // in a graphql query. Each graphql resolver receives a fourth parameter,
@@ -255,11 +245,10 @@ async function editCampaign(id, campaign, loaders, user, origCampaignRecord) {
       user
     );
     if (ingestMethod) {
-      let job = await JobRequest.save({
+      await jobRunner.dispatch({
         queue_name: `${id}:edit_campaign`,
         job_type: `ingest.${campaign.ingestMethod}`,
         locks_queue: true,
-        assigned: JOBS_SAME_PROCESS, // can get called immediately, below
         campaign_id: id,
         payload: campaign.contactData
       });
@@ -271,12 +260,6 @@ async function editCampaign(id, campaign, loaders, user, origCampaignRecord) {
           ingest_method: campaign.ingestMethod,
           ingest_success: null
         });
-
-      if (JOBS_SAME_PROCESS) {
-        dispatchContactIngestLoad(job, organization, {
-          /*FUTURE: context obj*/
-        });
-      }
     } else {
       console.error("ingestMethod unavailable", campaign.ingestMethod);
     }
@@ -284,10 +267,9 @@ async function editCampaign(id, campaign, loaders, user, origCampaignRecord) {
 
   if (campaign.hasOwnProperty("texters")) {
     changed = true;
-    let job = await JobRequest.save({
+    await jobRunner.dispatch({
       queue_name: `${id}:edit_campaign`,
       locks_queue: true,
-      assigned: JOBS_SAME_PROCESS, // can get called immediately, below
       job_type: "assign_texters",
       campaign_id: id,
       payload: JSON.stringify({
@@ -295,14 +277,6 @@ async function editCampaign(id, campaign, loaders, user, origCampaignRecord) {
         texters: campaign.texters
       })
     });
-
-    if (JOBS_SAME_PROCESS) {
-      if (JOBS_SYNC) {
-        await assignTexters(job);
-      } else {
-        assignTexters(job);
-      }
-    }
   }
 
   if (campaign.hasOwnProperty("interactionSteps")) {
@@ -522,21 +496,16 @@ const rootMutations = {
       const campaign = await loaders.campaign.load(id);
       const organizationId = campaign.organization_id;
       await accessRequired(user, organizationId, "ADMIN");
-      const newJob = await JobRequest.save({
+      return await jobRunner.dispatch({
         queue_name: `${id}:export`,
         job_type: "export",
         locks_queue: false,
-        assigned: JOBS_SAME_PROCESS, // can get called immediately, below
         campaign_id: id,
         payload: JSON.stringify({
           id,
           requester: user.id
         })
       });
-      if (JOBS_SAME_PROCESS) {
-        exportCampaign(newJob);
-      }
-      return newJob;
     },
     editOrganizationRoles: async (
       _,
@@ -1210,23 +1179,16 @@ const rootMutations = {
           url
         })
       );
-      const job = await JobRequest.save({
+      const job = await jobRunner.dispatch({
         queue_name: `${campaignId}:import_script`,
         job_type: "import_script",
         locks_queue: true,
-        assigned: JOBS_SAME_PROCESS, // can get called immediately, below
         campaign_id: campaignId,
         // NOTE: stringifying because compressedString is a binary buffer
         payload: compressedString.toString("base64")
       });
 
-      const jobId = job.id;
-
-      if (JOBS_SAME_PROCESS) {
-        importScript(job);
-      }
-
-      return jobId;
+      return job.id;
     },
     createTag: async (_, { organizationId, tagData }, { user }) => {
       await accessRequired(user, organizationId, "SUPERVOLUNTEER");

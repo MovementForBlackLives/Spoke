@@ -5,10 +5,7 @@ import { Notifications, sendUserNotification } from "../../notifications";
 import { loadCampaignCache, startCampaignAsync } from "../../../workers/jobs";
 import twilio from "../lib/twilio";
 import { getConfig } from "../lib/config";
-
-const JOBS_SAME_PROCESS = !!(
-  process.env.JOBS_SAME_PROCESS || global.JOBS_SAME_PROCESS
-);
+import { jobRunner } from "../../../integrations/job-runners";
 
 export const startCampaign = async (
   _,
@@ -26,13 +23,8 @@ export const startCampaign = async (
       truthy: true
     })
   ) {
-    if (!JOBS_SAME_PROCESS) {
-      throw Error(
-        "EXPERIMENTAL_CAMPAIGN_PHONE_NUMBERS only supports JOBS_SAME_PROCESS"
-      );
-    }
     // Transferring numbers in twilio can take a long time, so start campaign becomes a job
-    const job = await r.knex.transaction(async trx => {
+    await r.knex.transaction(async trx => {
       // TODO: get this working on SQLite?
       // prevent duplicate start jobs for the same campaign
       await trx.raw("LOCK TABLE job_request IN EXCLUSIVE MODE");
@@ -43,21 +35,18 @@ export const startCampaign = async (
       if (existing) {
         throw new Error("Duplicate start campaign job");
       }
-      return trx("job_request")
-        .insert({
+      // NOTE: long-running transaction with 'legacy' runner if run with JOBS_SYNC
+      return await jobRunner.dispatch(
+        {
           queue_name: `${id}:start_campaign`,
           job_type: "start_campaign",
           locks_queue: false,
-          assigned: true,
           campaign_id: id,
           payload: JSON.stringify({})
-        })
-        .returning("*");
+        },
+        { trx }
+      );
     });
-
-    console.log("Kicked off start_campaign job", job[0]);
-    // TODO: move to job dispatch function
-    startCampaignAsync(job[0]); // JOB_SAME_PROCESS no await
 
     return await cacheableData.campaign.load(id, {
       forceLoad: true
