@@ -21,10 +21,18 @@ export const schema = gql`
     sideboxChoices: [String]
   }
 
+  type ErrorStat {
+    code: String!
+    count: Int!
+    link: String
+    description: String
+  }
+
   type CampaignStats {
     sentMessagesCount: Int
     receivedMessagesCount: Int
     optOutsCount: Int
+    errorCounts: [ErrorStat]
   }
 
   type CampaignCompletionStats {
