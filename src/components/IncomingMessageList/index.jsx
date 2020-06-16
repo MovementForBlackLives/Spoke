@@ -119,6 +119,12 @@ export class IncomingMessageList extends Component {
         textOverflow: "ellipsis",
         overflow: "scroll",
         whiteSpace: "pre-line"
+      },
+      render: (columnKey, row) => {
+        if (!row.assignmentId) {
+          return "-";
+        }
+        return columnKey;
       }
     },
     {
