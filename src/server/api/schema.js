@@ -37,7 +37,8 @@ import {
   accessRequired,
   assignmentRequiredOrAdminRole,
   assignmentRequired,
-  authRequired
+  authRequired,
+  assignmentRequiredOrRole
 } from "./errors";
 import { resolvers as interactionStepResolvers } from "./interaction-step";
 import { resolvers as inviteResolvers } from "./invite";
@@ -988,11 +989,12 @@ const rootMutations = {
         contactIds[0]
       );
       const campaign = await loaders.campaign.load(firstContact.campaign_id);
-      await assignmentRequiredOrAdminRole(
+      await assignmentRequiredOrRole(
         user,
         campaign.organization_id,
         assignmentId,
-        firstContact
+        firstContact,
+        "SUPERVOLUNTEER"
       );
       let triedUpdate = false;
       const contacts = contactIds.map(async (contactId, cIdx) => {
