@@ -68,6 +68,7 @@ provider:
     EXPERIMENTAL_PHONE_INVENTORY: 1
     JOB_RUNNER: lambda-async
     WORKER_LAMBDA_FUNCTION_NAME: spoke-${self:custom.stage}-worker
+    MAX_TEXTERS_PER_CAMPAIGN: 300
   iamRoleStatements:
     - Effect: Allow
       Action: "s3:*"

@@ -26,9 +26,8 @@ export const joinOrganization = async (
       organization = await cacheableData.organization.load(
         campaign.organization_id
       );
-      const maxTextersPerCampaign = getConfig(
-        "MAX_TEXTERS_PER_CAMPAIGN",
-        organization
+      const maxTextersPerCampaign = Number(
+        getConfig("MAX_TEXTERS_PER_CAMPAIGN", organization)
       );
       if (maxTextersPerCampaign) {
         const campaignTexterCount = await r.getCount(
