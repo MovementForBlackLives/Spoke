@@ -37,6 +37,13 @@ function getConversationsJoinsAndWhereClause(
     query = query.where("is_opted_out", contactsFilter.isOptedOut);
   }
 
+  if (contactsFilter && contactsFilter.errorCode) {
+    query = query.where(
+      "campaign_contact.error_code",
+      contactsFilter.errorCode
+    );
+  }
+
   if (
     getConfig("EXPERIMENTAL_TAGS", null, { truthy: 1 }) &&
     contactsFilter &&
@@ -152,7 +159,8 @@ export async function getConversations(
     "message.user_number",
     "message.contact_number",
     "message.created_at",
-    "message.is_from_contact"
+    "message.is_from_contact",
+    "message.error_code"
   );
 
   query = getConversationsJoinsAndWhereClause(
@@ -187,7 +195,8 @@ export async function getConversations(
     "user_number",
     "contact_number",
     "created_at",
-    "is_from_contact"
+    "is_from_contact",
+    "error_code"
   ];
 
   let ccId = undefined;

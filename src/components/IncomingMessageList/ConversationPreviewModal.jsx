@@ -15,8 +15,28 @@ import theme from "../../styles/theme";
 
 import loadData from "../../containers/hoc/load-data";
 import MessageResponse from "./MessageResponse";
+import AlertError from "material-ui/svg-icons/alert/error";
 
 import { dataTest } from "../../lib/attributes";
+
+// TODO: share error code info: Copied from src/server/api/lib/twilio
+export const errorDescriptions = {
+  12400: "Internal (Twilio) Failure",
+  21211: "Invalid 'To' Phone Number",
+  21602: "Message body is required",
+  21610: "Attempt to send to unsubscribed recipient",
+  21611: "Source number has exceeded max number of queued messages",
+  21612: "Unreachable via SMS or MMS",
+  21614: "Invalid mobile number",
+  30001: "Queue overflow",
+  30002: "Account suspended",
+  30003: "Unreachable destination handset",
+  30004: "Message blocked",
+  30005: "Unknown destination handset",
+  30006: "Landline or unreachable carrier",
+  30007: "Message Delivery - Carrier violation",
+  30008: "Message Delivery - Unknown error"
+};
 
 const styles = StyleSheet.create({
   conversationRow: {
@@ -96,6 +116,11 @@ class MessageList extends Component {
               className={css(styles.conversationRow)}
               style={messageStyle}
             >
+              {message.errorCode ? (
+                <IconButton tooltip={errorDescriptions[message.errorCode]}>
+                  <AlertError color={"orange"} />
+                </IconButton>
+              ) : null}
               {message.text}
             </p>
           );

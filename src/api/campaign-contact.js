@@ -5,6 +5,7 @@ export const schema = `
     validTimezone: Boolean
     includePastDue: Boolean
     tags: [String]
+    errorCode: Int
   }
 
   type Timezone {

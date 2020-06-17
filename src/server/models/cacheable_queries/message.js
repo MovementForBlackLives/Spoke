@@ -191,6 +191,7 @@ const deliveryReport = async ({
       messageServiceSid
     );
     if (lookup && lookup.campaign_contact_id) {
+      // TODO: clear error code if we successfully message the contact after the first error?
       await r
         .knex("campaign_contact")
         .where("id", lookup.campaign_contact_id)

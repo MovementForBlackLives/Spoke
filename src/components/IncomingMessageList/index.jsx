@@ -160,6 +160,10 @@ export class IncomingMessageList extends Component {
         let lastMessageEl = <p>No Messages</p>;
         if (row.messages && row.messages.length > 0) {
           lastMessage = row.messages[row.messages.length - 1];
+          let color = lastMessage.isFromContact ? "blue" : "black";
+          if (lastMessage.errorCode) {
+            color = "red";
+          }
           lastMessageEl = (
             <p
               style={{
@@ -169,9 +173,7 @@ export class IncomingMessageList extends Component {
               }}
               title={lastMessage.text}
             >
-              <span
-                style={{ color: lastMessage.isFromContact ? "blue" : "black" }}
-              >
+              <span style={{ color }}>
                 <b>{lastMessage.isFromContact ? "Contact:" : "Texter:"} </b>
               </span>
               {lastMessage.text}
@@ -371,6 +373,7 @@ const queries = {
                 text
                 isFromContact
                 createdAt
+                errorCode
               }
               tags {
                 id

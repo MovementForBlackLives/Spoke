@@ -255,6 +255,12 @@ class IncomingMessageFilter extends Component {
                 onToggle={this.props.onOptedOutConversationsToggled}
                 toggled={this.props.includeOptedOutConversations}
               />
+              <br />
+              <Toggle
+                label={"Only Show Carrier Violations"}
+                onToggle={this.props.onCarrierViolationsToggled}
+                toggled={this.props.onlyCarrierViolations}
+              />
             </div>
           </div>
 
@@ -349,6 +355,8 @@ IncomingMessageFilter.propTypes = {
   onOptedOutConversationsToggled: type.func.isRequired,
   includeNotOptedOutConversations: type.bool.isRequired,
   includeOptedOutConversations: type.bool.isRequired,
+  onCarrierViolationsToggled: type.bool.isRequired,
+  onlyCarrierViolations: type.bool.isRequired,
   campaigns: type.array.isRequired,
   texters: type.array.isRequired,
   onMessageFilterChanged: type.func.isRequired,
