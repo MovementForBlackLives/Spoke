@@ -1,13 +1,30 @@
 import { GraphQLError } from "graphql/error";
-
 import { Message, cacheableData } from "../../models";
 import serviceMap from "../lib/services";
-
 import { getSendBeforeTimeUtc } from "../../../lib/timezones";
+import fetch from "node-fetch";
 
 const JOBS_SAME_PROCESS = !!(
   process.env.JOBS_SAME_PROCESS || global.JOBS_SAME_PROCESS
 );
+
+const { SWEEPER_WEBHOOK_URL, SWEEPER_WEBHOOK_SECRET } = process.env;
+
+function postToSweeper(user, messageText) {
+  if (SWEEPER_WEBHOOK_SECRET && SWEEPER_WEBHOOK_URL) {
+    fetch(SWEEPER_WEBHOOK_URL, {
+      method: "post",
+      body: JSON.stringify({
+        user_id: user.auth0_id,
+        message: messageText
+      }),
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Token ${SWEEPER_WEBHOOK_SECRET}`
+      }
+    }).catch(err => console.log("Error posting to sweeper", err));
+  }
+}
 
 export const sendMessage = async (
   _,
@@ -131,6 +148,9 @@ export const sendMessage = async (
     contact
   });
   contact.message_status = saveResult.contactStatus;
+
+  // fire and forget
+  postToSweeper(user, finalText);
 
   // log.info(
   //   `Sending (${serviceName}): ${messageInstance.user_number} -> ${messageInstance.contact_number}\nMessage: ${messageInstance.text}`

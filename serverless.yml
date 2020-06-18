@@ -69,6 +69,8 @@ provider:
     JOB_RUNNER: lambda-async
     WORKER_LAMBDA_FUNCTION_NAME: spoke-${self:custom.stage}-worker
     MAX_TEXTERS_PER_CAMPAIGN: 300
+    SWEEPER_WEBHOOK_URL: ${ssm:/${self:custom.stage}/spoke/SWEEPER_WEBHOOK_URL~true}
+    SWEEPER_WEBHOOK_SECRET: ${ssm:/${self:custom.stage}/sweeper/API_AUTHORIZATION_TOKEN~true}
   iamRoleStatements:
     - Effect: Allow
       Action: "s3:*"
