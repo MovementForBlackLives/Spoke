@@ -104,7 +104,10 @@ export async function getConversations(
   /* Query #1 == get campaign_contact.id for all the conversations matching
    * the criteria with offset and limit. */
   const starttime = new Date();
-  let offsetLimitQuery = r.knex.select("campaign_contact.id as cc_id");
+  let offsetLimitQuery = r.knex.select(
+    "campaign_contact.id as cc_id",
+    "campaign_contact.updated_at as cc_updated_at"
+  );
 
   offsetLimitQuery = getConversationsJoinsAndWhereClause(
     offsetLimitQuery,
@@ -114,7 +117,14 @@ export async function getConversations(
     contactsFilter
   );
 
-  offsetLimitQuery = offsetLimitQuery.orderBy("cc_id", "desc");
+  if (contactsFilter.messageStatus === "needsResponse") {
+    console.log("HERE");
+    offsetLimitQuery = offsetLimitQuery
+      .orderBy("cc_updated_at", "asc")
+      .orderBy("cc_id", "desc");
+  } else {
+    offsetLimitQuery = offsetLimitQuery.orderBy("cc_id", "desc");
+  }
   offsetLimitQuery = offsetLimitQuery.limit(cursor.limit).offset(cursor.offset);
   console.log(
     "getConversations sql",
@@ -178,7 +188,15 @@ export async function getConversations(
     table.on("message.campaign_contact_id", "=", "campaign_contact.id");
   });
 
-  query = query.orderBy("cc_id", "desc").orderBy("message.id");
+  if (contactsFilter.messageStatus === "needsResponse") {
+    query = query
+      .orderBy("campaign_contact.updated_at")
+      .orderBy("cc_id", "desc")
+      .orderBy("message.id");
+  } else {
+    query = query.orderBy("cc_id", "desc").orderBy("message.id");
+  }
+
   const conversationRows = await query;
   console.log(
     "getConversations query2 result",
